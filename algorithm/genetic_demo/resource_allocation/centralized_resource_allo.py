@@ -372,10 +372,9 @@ def cen_evolution(evolu_times, absolute_time, at_valid=False):
     #       '最佳分配：\n', c_agent.intact_population[np.argmax(pre_gen_intact_fit)])
     # print('串行计算时间：%0.2f' % (serial_compute / 3000))
   else:
-    pass
-    # print('最大收益：', c_agent.intact_population_fit[0],
-    #       '最佳分配：\n', c_agent.intact_population[0])
-    # print('串行计算时间：%0.2f' % (serial_compute / 3000))
+    print('最大收益：', c_agent.intact_population_fit[0],
+          '最佳分配：\n', c_agent.intact_population[0])
+    print('串行计算时间：%0.2f' % (serial_compute / 3000))
 
   return avg_popu_fitness, best_popu_fitness
 

@@ -481,7 +481,7 @@ def get_remote_popu_from_share_pool(share_pool, agent_no):
 
 
 def co_evolution(interact_time, independent_time, absolute_time, at_valid=False):
-  agents = []
+  agents: list[Agent] = []
   # 画图用
   avg_popu_fitness_all = []
   best_popu_fitness_all = []
@@ -592,6 +592,9 @@ def co_evolution(interact_time, independent_time, absolute_time, at_valid=False)
           avg_popu_fitness_all[i].append(np.mean(agents[i].local_population_fit))
           best_popu_fitness_all[i].append([paralle_compute / AGENT_NUM + communication,
                                           agents[i].local_population_fit[0]])
+        else:
+          avg_popu_fitness_all[i].append(0)
+          best_popu_fitness_all[i].append([paralle_compute / AGENT_NUM + communication, 0])
 
       # 假设采用广播机制，agent共享最优全局解的时间为端到端时延 50ms
       communication += COMMUNACATION_DELAY
@@ -650,7 +653,7 @@ def co_evolution_with_netlag(interact_time, independent_time, absolute_time, at_
   :param at_valid: 绝对时间是否有效，无效时按照进化次数进行迭代
   :return:
   """
-  agents = []
+  agents: list[Agent] = []
   # 画图用
   avg_popu_fitness_all = []
   best_popu_fitness_all = []
