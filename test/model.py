@@ -1,38 +1,46 @@
+# Task class
+# ST:Surface Target
+# AT:Air Target
+# SA:Surface Area
 class Task:
-  def __init__(self, task_type, coordinates):
-    self.task_type = task_type
-    self.coordinates = coordinates
+  def __init__(self, id, type):
+    self.id = id
+    self.type = type  # string:{"ST","AT","SA"}
+    self.coordinates = (0, 0)  # tuple:(double,double)
 
 
 class ST_Task(Task):
-  def __init__(self, task_type, coordinates, phase):
-    super().__init__(task_type, coordinates)
-    self.phase = phase
+  def __init__(self, id, type, phase=1):
+    super().__init__(id, type)
+    self.phase = phase  # phase 1:探测任务 phase 2:打击任务
 
 
 class SA_Task(Task):
-  def __init__(self, task_type, coordinates, side_length):
-    super().__init__(task_type, coordinates)
-    self.side_length = side_length
+  def __init__(self, id, type, side_length=0):
+    super().__init__(id, type)
+    self.side_length = side_length  # length of side of searching area
 
 
 class AT_Task(Task):
-  def __init__(self, task_type, coordinates):
-    super().__init__(task_type, coordinates)
+  def __init__(self, id, type):
+    super().__init__(id, type)
 
 
-# 示例用法
-st_task = ST_Task(task_type="ST", coordinates=(10, 20), phase=1)
-sa_task = SA_Task(task_type="SA", coordinates=(30, 40), side_length=5)
-at_task = AT_Task(task_type="AT", coordinates=(50, 60))
+# Agent class
+# UAV:Unmanned Air Vehicle
+# USV:Unmanned Surface Vehicle
+class Agent:
+  def __init__(self, id, type):
+    self.id = id
+    self.type = type  # string:{"UAV","USV"}
+    self.coordinate = (0, 0)  # tuple:(double,double)
 
-print("ST Task Type:", st_task.task_type)
-print("ST Coordinates:", st_task.coordinates)
-print("ST Phase:", st_task.phase)
 
-print("SA Task Type:", sa_task.task_type)
-print("SA Coordinates:", sa_task.coordinates)
-print("SA Side Length:", sa_task.side_length)
+class UAV(Agent):
+  def __init__(self, id, type):
+    super().__init__(id, type)
 
-print("AT Task Type:", at_task.task_type)
-print("AT Coordinates:", at_task.coordinates)
+
+class USV(Agent):
+  def __init__(self, id, type):
+    super().__init__(id, type)

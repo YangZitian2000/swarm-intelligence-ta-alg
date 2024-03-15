@@ -603,7 +603,7 @@ def co_evolution(interact_time, independent_time, absolute_time, at_valid=False,
   # json_data["log"] = []
   # logs = []
 
-  agents = []
+  agents: list[Agent] = []
   # 画图用
   avg_popu_fitness_all = []
   best_popu_fitness_all = []
@@ -751,7 +751,7 @@ def co_evolution_with_netlag(interact_time, independent_time, absolute_time, at_
   :param at_valid: 绝对时间是否有效，无效时按照进化次数进行迭代
   :return:
   """
-  agents = []
+  agents: list[Agent] = []
   # 画图用
   avg_popu_fitness_all = []
   best_popu_fitness_all = []
