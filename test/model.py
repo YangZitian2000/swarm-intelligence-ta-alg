@@ -6,7 +6,7 @@ class Task:
   def __init__(self, id, type):
     self.id = id
     self.type = type  # string:{"ST","AT","SA"}
-    self.coordinates = (0, 0)  # tuple:(double,double)
+    self.coordinate = (0, 0)  # tuple:(float, float)
 
 
 class ST_Task(Task):
@@ -33,7 +33,7 @@ class Agent:
   def __init__(self, id, type):
     self.id = id
     self.type = type  # string:{"UAV","USV"}
-    self.coordinate = (0, 0)  # tuple:(double,double)
+    self.coordinate = (0, 0)  # tuple:(float, float)
 
 
 class UAV(Agent):
