@@ -1,6 +1,8 @@
 from model import *
 import random
 import matplotlib.pyplot as plt
+import json
+import os
 
 
 class Scene:
@@ -56,6 +58,38 @@ class Scene:
   def generate_SA_task_coordinate(self):
     pass
 
+  def export_to_json(self):
+    self.json_data = {"agents": [], "tasks": []}
+    # 将Agent信息添加到 JSON 数据中
+    for agent in self.agent:
+      agent_info = {
+          "id": agent.id,
+          "type": agent.type,
+          "coordinate": agent.coordinate
+      }
+      self.json_data["agents"].append(agent_info)
+
+    # 将Task信息添加到 JSON 数据中
+    for task in self.task:
+      task_info = {
+          "id": task.id,
+          "type": task.type,
+          "coordinate": task.coordinate
+      }
+      if isinstance(task, ST_Task):
+        task_info["phase"] = task.phase
+      elif isinstance(task, AT_Task):
+        pass
+      elif isinstance(task, SA_Task):
+        pass
+      else:
+        raise Exception("Unknown task type!")
+      self.json_data["tasks"].append(task_info)
+
+    # 将 JSON 数据写入文件
+    with open(os.getcwd() + "\\\\test\\\\" + self.scene_code + ".json", 'w') as f:
+      json.dump(self.json_data, f, indent=4)
+
 
 # 打击ST场景
 class SD(Scene):
@@ -68,12 +102,14 @@ class SD(Scene):
 class KD(Scene):
   def __init__(self, scene_code, agent_code, task_code, distribution="uniform"):
     super().__init__(scene_code, agent_code, task_code, distribution)
+    self.generate_AT_task_coordinate()
 
 
 # 区域搜索场景
 class QD(Scene):
   def __init__(self, scene_code, agent_code, task_code, distribution="uniform"):
     super().__init__(scene_code, agent_code, task_code, distribution)
+    self.generate_SA_task_coordinate()
 
 
 class Factory:
@@ -177,3 +213,4 @@ for scene in scene_list:
   plt.ylabel('Y')
   plt.grid(True)
   plt.show()
+  scene.export_to_json()
