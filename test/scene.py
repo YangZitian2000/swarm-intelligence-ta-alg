@@ -2,6 +2,8 @@ from model import *
 import random
 import matplotlib.pyplot as plt
 
+import scene_data_reader
+
 
 class Scene:
   def __init__(self, scene_code: str, agent_code: str, task_code: str, distribution: str):
@@ -120,30 +122,24 @@ class Factory:
     type = scene_code[:2]
     code = int(scene_code[2:])
     if type == "SD":
-      if code == 1:
-        return SD(scene_code=scene_code, agent_code="A1", task_code="T1")
-      elif code == 2:
-        return SD(scene_code=scene_code, agent_code="A2", task_code="T1")
-      # 润洋TODO
+      return SD(scene_code=scene_code, 
+                agent_code=scene_data_reader.get_agent_code(scene_code), 
+                task_code=scene_data_reader.get_task_code(scene_code))
     elif type == "KD":
-      if code == 1:
-        return KD(scene_code=scene_code, agent_code="A1", task_code="T11")
-      elif code == 2:
-        return KD(scene_code=scene_code, agent_code="A1", task_code="T12")
-      # 润洋TODO
+      return KD(scene_code=scene_code, 
+                agent_code=scene_data_reader.get_agent_code(scene_code), 
+                task_code=scene_data_reader.get_task_code(scene_code))
     elif type == "QD":
-      if code == 1:
-        return QD(scene_code=scene_code, agent_code="A1", task_code="T21")
-      elif code == 2:
-        return QD(scene_code=scene_code, agent_code="A2", task_code="T22")
-      # 润洋TODO
+      return QD(scene_code=scene_code, 
+                agent_code=scene_data_reader.get_agent_code(scene_code), 
+                task_code=scene_data_reader.get_task_code(scene_code))
     else:
       raise Exception("Unknown scene type!")
 
 
 scene_list: list[Scene] = []
 SD1 = Factory.generate_scene("SD1")
-SD2 = Factory.generate_scene("SD2")
+SD2 = Factory.generate_scene("SD55")
 scene_list.append(SD1)
 scene_list.append(SD2)
 
