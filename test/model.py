@@ -1,46 +1,77 @@
+import random
+
+
+requirements = [18, 20, 25, 28, 30, 32, 35, 40]
+yield_rate = 100
+rate = 0.15
+
+
 # Task class
-# ST:Surface Target
-# AT:Air Target
-# SA:Surface Area
 class Task:
   def __init__(self, id, type):
     self.id = id
-    self.type = type  # string:{"ST","AT","SA"}
-    self.coordinate = (0, 0)  # tuple:(float, float)
+    self.type = type  # string:{"ST", "AT", "SA"}
+    self.rec_coor = (0, 0)  # tuple:(float, float) rectangular coordinate system
+    self.polar_coor = (0, 0)  # tuple:(float, float) polar coordinate system
 
 
+# ST:Surface Target
 class ST_Task(Task):
-  def __init__(self, id, type, phase=1):
+  def __init__(self, id, type, direction):
     super().__init__(id, type)
-    self.phase = phase  # phase 1:探测任务 phase 2:打击任务
+    self.speed = 55.56  # 30节 = 55.56km/h
+    self.direction = direction  # 单位: °
+    self.requirement = random.choice(requirements)  # int: 资源需求量
+    self.profit = random.uniform(self.requirement * yield_rate * (1 - rate),
+                                 self.requirement * yield_rate * (1 + rate))  # float: Task收益
 
 
+# AT:Air Target
+class AT_Task(Task):
+  def __init__(self, id, type):
+    super().__init__(id, type)
+
+
+# SA:Surface Area
 class SA_Task(Task):
   def __init__(self, id, type, side_length=0):
     super().__init__(id, type)
     self.side_length = side_length  # length of side of searching area
 
 
-class AT_Task(Task):
-  def __init__(self, id, type):
-    super().__init__(id, type)
-
-
 # Agent class
-# UAV:Unmanned Air Vehicle
-# USV:Unmanned Surface Vehicle
 class Agent:
-  def __init__(self, id, type):
+  def __init__(self, id, type, group_id):
     self.id = id
     self.type = type  # string:{"UAV","USV"}
-    self.coordinate = (0, 0)  # tuple:(float, float)
+    self.rec_coor = (0, 0)  # tuple:(float, float) rectangular coordinate system
+    self.polar_coor = (0, 0)  # tuple:(float, float) polar coordinate system
+    self.group_id = group_id
 
 
+# 无人机
 class UAV(Agent):
   def __init__(self, id, type):
     super().__init__(id, type)
 
 
+# 无人艇
 class USV(Agent):
   def __init__(self, id, type):
     super().__init__(id, type)
+
+
+# 有人艇
+class MSV(Agent):
+  def __init__(self, id, type):
+    super().__init__(id, type)
+
+
+# 编组类, 形状为圆形, 坐标为圆心
+class Group:
+  def __init__(self, id):
+    self.id = id
+    self.rec_coor = (0, 0)  # tuple:(float, float) rectangular coordinate system
+    self.polar_coor = (0, 0)  # tuple:(float, float) polar coordinate system
+    self.radius = 20  # 半径: km
+    self.agents = []  # 编组中包含的Agent id
