@@ -1,20 +1,9 @@
 from model import *
+from settings import *
 import random
 import math
-import matplotlib.pyplot as plt
 import json
 import os
-
-random.seed(0)
-
-# SD settings
-agent_num_per_group_SD = [[(3, 1), (4, 1)],  # 每组Agent数, 每组中MSV数
-                          [(3, 1), (2, 0), (3, 1)],
-                          [(3, 0), (3, 0), (4, 1), (2, 0)],
-                          [(3, 0), (3, 0), (3, 0), (3, 0), (4, 1), (4, 1), (4, 1), (2, 0), (2, 0), (2, 0)],
-                          [(4, 0) for _ in range(15)]]
-
-task_num_SD = [2, 2, 4, 8, 24]  # 每个场景的任务数
 
 
 class Scene:
@@ -66,153 +55,9 @@ class Scene:
       json.dump(self.json_data, f, indent=4)
 
 
-def angle_to_radian(angle: float):
-  return (450 - angle) % 360 / 180 * math.pi
-
-
-def radian_to_angle(radian: float):
-  return (450 - radian / math.pi * 180) % 360
-
-
-def rec_to_polar(point):
-  x, y = point
-  r = math.sqrt(x**2 + y**2)
-  theta = math.atan2(y, x)
-  a = radian_to_angle(theta)
-  return r, a
-
-
-def rec_distance(point1, point2):
-  x1, y1 = point1
-  x2, y2 = point2
-  distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-  return distance
-
-
-def polar_distance(polar1, polar2):
-  r1, theta1 = polar1
-  r2, theta2 = polar2
-  theta1 = angle_to_radian(theta1)
-  theta2 = angle_to_radian(theta2)
-  distance = math.sqrt(r1**2 + r2**2 - 2 * r1 * r2 * math.cos(theta2 - theta1))
-  return distance
-
-
-# 打击ST场景
-class SD(Scene):
-  def __init__(self, scene_code):
-    code = int(scene_code[2:])
-    if code > 5 or code < 1:
-      raise Exception("Invalid SD scene code!")
-    super().__init__(scene_code)
-    # 确定组的坐标
-    self.generate_group_coordinate_SD()
-    # 确定任务坐标
-    self.generate_task_coordinate_SD()
-    # 确定Agent坐标
-    self.generate_agent_coordinate_SD()
-
-  def generate_group_coordinate_SD(self):
-    code = int(self.scene_code[2:])
-    # Group 1默认位于原点, 且包含指挥舰
-    if code == 1:
-      group_2 = self.groups[2]
-      r = random.uniform(180, 220)
-      a = random.uniform(0, 30)
-      group_2.polar_coor = (r, a)
-      x = r * math.cos(angle_to_radian(a))
-      y = r * math.sin(angle_to_radian(a))
-      group_2.rec_coor = (x, y)
-      self.groups[2] = group_2
-    elif code == 2:
-      pass
-    elif code == 3:
-      pass
-    elif code == 4:
-      pass
-    else:
-      pass
-
-  def generate_task_coordinate_SD(self):
-    min_range, max_range = 270, 330
-    code = int(self.scene_code[2:])
-    task_num: int = task_num_SD[code - 1]
-    if code == 1:
-      avaliable_angle = []
-      for angle in range(0, 181):
-        distance_min = polar_distance((min_range, angle), self.groups[2].polar_coor)
-        distance_max = polar_distance((max_range, angle), self.groups[2].polar_coor)
-        if min_range < distance_min and distance_min < max_range or \
-                min_range < distance_max and distance_max < max_range:
-          avaliable_angle.append(angle)
-      while True:
-        [a1, a2] = random.sample(avaliable_angle, task_num)
-        r1, r2 = random.uniform(300, 330), random.uniform(300, 330)
-        if polar_distance((r1, a1), (r2, a2)) >= 50:
-          x1, y1 = r1 * math.cos(angle_to_radian(a1)), r1 * math.sin(angle_to_radian(a1))
-          x2, y2 = r2 * math.cos(angle_to_radian(a2)), r2 * math.sin(angle_to_radian(a2))
-          self.tasks[1].polar_coor = (r1, a1)
-          self.tasks[1].rec_coor = (x1, y1)
-          self.tasks[2].polar_coor = (r2, a2)
-          self.tasks[2].rec_coor = (x2, y2)
-          break
-    elif code == 2:
-      pass
-    elif code == 3:
-      pass
-    elif code == 4:
-      pass
-    else:
-      pass
-
-  def generate_agent_coordinate_SD(self):
-    code = int(self.scene_code[2:])
-    if code == 1:
-      for group in self.groups.values():
-        agent_num_in_group = len(group.agents)
-        agent_polar_coors = []
-        if group.id == 1:  # 如果是第一组，则包含指挥舰位于原点
-          agent_polar_coors.append((0, 0))
-        while len(agent_polar_coors) < agent_num_in_group:
-          r = random.uniform(0, group.radius)
-          a = random.uniform(0, 360)
-          valid = True
-          for cur_agent_polar_coor in agent_polar_coors:
-            if polar_distance((r, a), cur_agent_polar_coor) < 5:
-              valid = False
-          if valid:
-            agent_polar_coors.append((r, a))
-        for i, agent_id in enumerate(group.agents):
-          if agent_id == 1:
-            continue
-          r, a = agent_polar_coors[i]
-          x, y = r * math.cos(angle_to_radian(a)), r * math.sin(angle_to_radian(a))
-          self.agents[agent_id].rec_coor = (group.rec_coor[0] + x, group.rec_coor[1] + y)
-          self.agents[agent_id].polar_coor = rec_to_polar(self.agents[agent_id].rec_coor)
-    elif code == 2:
-      pass
-    elif code == 3:
-      pass
-    elif code == 4:
-      pass
-    else:
-      pass
-
-
-# 打击AT场景
-class KD(Scene):
-  def __init__(self, scene_code):
-    super().__init__(scene_code)
-
-
-# 区域搜索场景
-class QD(Scene):
-  def __init__(self, scene_code):
-    super().__init__(scene_code)
-
-
 class Factory:
   @staticmethod
+  # 根据场景类型标识生成对应的编组列表(不包含坐标)
   def generate_groups(scene_code: str):
     code = int(scene_code[2:])
     agent_per_group = agent_num_per_group_SD[code - 1]
@@ -290,69 +135,204 @@ class Factory:
       raise Exception("Invalid scene type!")
 
 
-scene_list: list[Scene] = []
-SD1 = Factory.generate_scene("SD1")
-# SD2 = Factory.generate_scene("SD2")
-scene_list.append(SD1)
-# scene_list.append(SD2)
+# 打击ST场景
+class SD(Scene):
+  def __init__(self, scene_code):
+    code = int(scene_code[2:])
+    if code > 5 or code < 1:
+      raise Exception("Invalid SD scene code!")
+    super().__init__(scene_code)
+    if code == 3:
+      # 确定任务坐标
+      self.generate_task_coordinate_SD()
+      # 确定组的坐标
+      self.generate_group_coordinate_SD()
+    else:
+      # 确定组的坐标
+      self.generate_group_coordinate_SD()
+      # 确定任务坐标
+      self.generate_task_coordinate_SD()
 
-# 控制台输出信息
-for scene in scene_list:
-  print("Scene : ", scene.scene_code)
-  if isinstance(scene, SD):
-    print("\tGroups:")
-    for group in scene.groups:
-      print(
-          f"\t- ID:{group}, Rec Coordinates:{scene.groups[group].rec_coor}, Polar Coordinates:{scene.groups[group].polar_coor}, Agents:{scene.groups[group].agents}")
-    print("\tAgents:")
-    for agent in scene.agents:
-      print(
-          f"\t- ID:{agent}, Type: {scene.agents[agent].type}, Rec Coordinates: {scene.agents[agent].rec_coor}, Polar Coordinates:{scene.agents[agent].polar_coor}, Group id: {scene.agents[agent].group_id}")
-    print("\tTasks:")
-    for task in scene.tasks:
-      print(
-          f"\t- ID:{task}, Type: {scene.tasks[task].type}, Rec Coordinates: {scene.tasks[task].rec_coor}, Polar Coordinates:{scene.tasks[task].polar_coor}, Direction: {scene.tasks[task].direction}, Requirement: {scene.tasks[task].requirement}, Profit: {scene.tasks[task].profit}")
-      print(f"\t distance to group 2: {rec_distance(scene.tasks[task].rec_coor,scene.groups[2].rec_coor)}")
-  print(f"\t seed: {random.getstate()[1][0]}")
-  scene.export_to_json()
+    # 确定Agent坐标
+    self.generate_agent_coordinate_SD()
 
-
-# 绘图
-for scene in scene_list:
-  fig, ax = plt.subplots()
-  type = scene.scene_code[0:2]
-  code = int(scene.scene_code[2:])
-  if type == "SD":
+  def generate_group_coordinate_SD(self):
+    code = int(self.scene_code[2:])
+    # Group 1默认位于原点, 且包含指挥舰
     if code == 1:
-      ax.set_xlim(-100, 400)
-      ax.set_ylim(-100, 300)
-  ax.set_aspect('equal', adjustable='box')
-  for group in scene.groups.values():
-    circle = plt.Circle(group.rec_coor, group.radius, linestyle='dashed', edgecolor='black', facecolor='none')
-    ax.add_artist(circle)
-  ax.scatter([agent.rec_coor[0] for agent in scene.agents.values() if agent.type == "MSV"],
-             [agent.rec_coor[1] for agent in scene.agents.values() if agent.type == "MSV"], color="r", label="MSV", marker="*")  # 有人艇
-  ax.scatter([agent.rec_coor[0] for agent in scene.agents.values() if agent.type == "USV"],
-             [agent.rec_coor[1] for agent in scene.agents.values() if agent.type == "USV"], color="r", label="USV", marker=".")  # 无人艇
-  ax.scatter([task.rec_coor[0] for task in scene.tasks.values() if task.type == "ST"],
-             [task.rec_coor[1] for task in scene.tasks.values() if task.type == "ST"], color="b", label="ST", marker="<")  # ST任务
+      group_2 = self.groups[2]  # 生成Group 2位置
+      r, a = random.uniform(180, 220), random.uniform(0, 30)
+      x, y = r * math.cos(angle_to_radian(a)), r * math.sin(angle_to_radian(a))
+      group_2.polar_coor = (r, a)
+      group_2.rec_coor = (x, y)
+      self.groups[2] = group_2
+    elif code == 2:
+      for group_id in range(2, 4):  # 生成Group 2,3位置
+        group = self.groups[group_id]
+        if group_id == 2:
+          r, a = random.uniform(75, 90), random.uniform(10, 30)
+        elif group_id == 3:
+          r, a = random.uniform(75, 90), random.uniform(150, 170)
+        x, y = r * math.cos(angle_to_radian(a)), r * math.sin(angle_to_radian(a))
+        group.polar_coor = (r, a)
+        group.rec_coor = (x, y)
+        self.groups[group_id] = group
+    elif code == 3:
+      group_coor_list = []
+      group_1_coor = self.tasks[1].polar_coor
+      group_coor_list.append((group_1_coor[0], group_1_coor[1] + 180))  # 编组1的位置已有
+      while len(group_coor_list) < 4:  # 再生成3个编组坐标, 满足相互距离大于100
+        r, a = random.uniform(310, 330), random.uniform(0, 360)
+        valid = True
+        for cur_coor in group_coor_list:
+          if polar_distance((r, a), cur_coor) < 200:
+            valid = False
+        if valid:
+          group_coor_list.append((r, a))
+      group_coor_list.pop(0)
+      task_rec = self.tasks[1].rec_coor
+      group_id = 2
+      for r, a in group_coor_list:  # 将3个编组坐标录入
+        x, y = r * math.cos(angle_to_radian(a)), r * math.sin(angle_to_radian(a))
+        x_t, y_t = task_rec[0] + x, task_rec[1] + y
+        self.groups[group_id].rec_coor = (x_t, y_t)
+        self.groups[group_id].polar_coor = rec_to_polar((x_t, y_t))
+        group_id += 1
+    elif code == 4:
+      pass
+    else:
+      pass
 
-  ax.legend()
-  ax.set_title(scene.scene_code)
+  def generate_task_coordinate_SD(self):
+    min_range, max_range = 270, 330
+    code = int(self.scene_code[2:])
+    if code == 1:
+      avaliable_angle = []
+      for angle in range(0, 181):  # 寻找所有在满足距离G1 min~max range条件下，能够满足距离G2也在min~max range范围的角度
+        distance_min = polar_distance((min_range, angle), self.groups[2].polar_coor)
+        distance_max = polar_distance((max_range, angle), self.groups[2].polar_coor)
+        if min_range < distance_min and distance_min < max_range or \
+                min_range < distance_max and distance_max < max_range:
+          avaliable_angle.append(angle)
+      while True:  # 任选2个可行的角度生成任务，并满足任务间距离大于50
+        [a1, a2] = random.sample(avaliable_angle, 2)
+        r1, r2 = random.uniform(300, 330), random.uniform(300, 330)
+        if polar_distance((r1, a1), (r2, a2)) >= 50:
+          x1, y1 = r1 * math.cos(angle_to_radian(a1)), r1 * math.sin(angle_to_radian(a1))
+          x2, y2 = r2 * math.cos(angle_to_radian(a2)), r2 * math.sin(angle_to_radian(a2))
+          self.tasks[1].polar_coor = (r1, a1)
+          self.tasks[1].rec_coor = (x1, y1)
+          self.tasks[2].polar_coor = (r2, a2)
+          self.tasks[2].rec_coor = (x2, y2)
+          break
+    elif code == 2:
+      r1, a1 = random.uniform(310, 330), random.uniform(80, 90)  # 生成任务1坐标
+      x1, y1 = r1 * math.cos(angle_to_radian(a1)), r1 * math.sin(angle_to_radian(a1))
+      self.tasks[1].polar_coor = (r1, a1)
+      self.tasks[1].rec_coor = (x1, y1)
+      while True:  # 生成任务2坐标，满足任务1和2距离在50~60
+        r2, a2 = random.uniform(310, 330), random.uniform(90, 100)
+        p_dis = polar_distance((r1, a1), (r2, a2))
+        if p_dis >= 50 and p_dis <= 60:
+          x2, y2 = r2 * math.cos(angle_to_radian(a2)), r2 * math.sin(angle_to_radian(a2))
+          self.tasks[2].polar_coor = (r2, a2)
+          self.tasks[2].rec_coor = (x2, y2)
+          break
+    elif code == 3:
+      r, a = random.uniform(315, 325), random.uniform(40, 50)
+      x, y = r * math.cos(angle_to_radian(a)), r * math.sin(angle_to_radian(a))
+      width, length = [random.uniform(10, 15) for _ in range(2)]  # 目标矩阵的长和宽
+      x1, y1 = x + length / 2, y + width / 2
+      x2, y2 = x + length / 2, y - width / 2
+      x3, y3 = x - length / 2, y - width / 2
+      x4, y4 = x - length / 2, y + width / 2
+      self.tasks[1].rec_coor = (x1, y1)
+      self.tasks[2].rec_coor = (x2, y2)
+      self.tasks[3].rec_coor = (x3, y3)
+      self.tasks[4].rec_coor = (x4, y4)
+      self.tasks[1].polar_coor = rec_to_polar((x1, y1))
+      self.tasks[2].polar_coor = rec_to_polar((x2, y2))
+      self.tasks[3].polar_coor = rec_to_polar((x3, y3))
+      self.tasks[4].polar_coor = rec_to_polar((x4, y4))
+    elif code == 4:
+      pass
+    else:
+      pass
 
-  # 设置坐标轴边界
-  ax.spines['top'].set_visible(False)
-  ax.spines['right'].set_visible(False)
-  ax.spines['left'].set_linewidth(0.5)  # 设置左边框的线宽
-  ax.spines['bottom'].set_linewidth(0.5)  # 设置底部边框的线宽
-  # 仅显示 x=0 和 y=0 的刻度线
-  ax.xaxis.set_ticks_position('bottom')
-  ax.yaxis.set_ticks_position('left')
-  # 设置 x=0 和 y=0 的刻度线
-  ax.spines['bottom'].set_position(('data', 0))
-  ax.spines['left'].set_position(('data', 0))
+  def generate_agent_coordinate_SD(self):
+    code = int(self.scene_code[2:])
+    if code == 1 or code == 2 or code == 3:
+      for group in self.groups.values():
+        agent_num_in_group = len(group.agents)
+        agent_polar_coors = []
+        if group.id == 1:  # 如果是第一组，则包含指挥舰位于原点
+          agent_polar_coors.append((0, 0))
+        while len(agent_polar_coors) < agent_num_in_group:  # 在编组半径范围内随机生成坐标，保证所有坐标之间距离大于5
+          r = random.uniform(0, group.radius)
+          a = random.uniform(0, 360)
+          valid = True
+          for cur_agent_polar_coor in agent_polar_coors:
+            if polar_distance((r, a), cur_agent_polar_coor) < 5:
+              valid = False
+          if valid:
+            agent_polar_coors.append((r, a))
+        for i, agent_id in enumerate(group.agents):  # 将可行的一组坐标作为该编组中Agent的坐标
+          if agent_id == 1:
+            continue
+          r, a = agent_polar_coors[i]
+          x, y = r * math.cos(angle_to_radian(a)), r * math.sin(angle_to_radian(a))
+          self.agents[agent_id].rec_coor = (group.rec_coor[0] + x, group.rec_coor[1] + y)
+          self.agents[agent_id].polar_coor = rec_to_polar(self.agents[agent_id].rec_coor)
+    elif code == 4:
+      pass
+    else:
+      pass
 
-  plt.xlabel('X')
-  plt.ylabel('Y')
-  # plt.grid(True)
-  plt.show()
+
+# 打击AT场景
+class KD(Scene):
+  def __init__(self, scene_code):
+    super().__init__(scene_code)
+
+
+# 区域搜索场景
+class QD(Scene):
+  def __init__(self, scene_code):
+    super().__init__(scene_code)
+
+
+# 角度转弧度
+def angle_to_radian(angle: float):
+  return (450 - angle) % 360 / 180 * math.pi
+
+
+# 弧度转角度
+def radian_to_angle(radian: float):
+  return (450 - radian / math.pi * 180) % 360
+
+
+# 直角坐标转极坐标
+def rec_to_polar(point):
+  x, y = point
+  r = math.sqrt(x**2 + y**2)
+  theta = math.atan2(y, x)
+  a = radian_to_angle(theta)
+  return (r, a)
+
+
+# 直角坐标距离
+def rec_distance(point1, point2):
+  x1, y1 = point1
+  x2, y2 = point2
+  distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+  return distance
+
+
+# 极坐标距离
+def polar_distance(polar1, polar2):
+  r1, theta1 = polar1
+  r2, theta2 = polar2
+  theta1 = angle_to_radian(theta1)
+  theta2 = angle_to_radian(theta2)
+  distance = math.sqrt(r1**2 + r2**2 - 2 * r1 * r2 * math.cos(theta2 - theta1))
+  return distance
