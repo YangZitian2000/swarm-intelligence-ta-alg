@@ -33,7 +33,7 @@ for scene in scene_list:
 
 # 绘图
 for scene in scene_list:
-  fig, ax = plt.subplots()
+  fig, ax = plt.subplots(figsize=(12, 6))
   type = scene.scene_code[0:2]
   code = int(scene.scene_code[2:])
   if type == "SD":
@@ -45,7 +45,7 @@ for scene in scene_list:
       ax.set_ylim(-150, 150)
     elif code == 3:
       ax.set_xlim(-100, 600)
-      ax.set_ylim(-100, 600)
+      ax.set_ylim(-100, 500)
 
   ax.set_aspect('equal', adjustable='box')
   for group in scene.groups.values():
