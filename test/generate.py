@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 random.seed(0)
 
 scene_list: list[Scene] = []
-code = 3
+code = 5
 
-for i in range(1, code + 1):
+for i in range(4, code + 1):
   scene_list.append(Factory.generate_scene("SD" + str(i)))
 
 
@@ -46,6 +46,12 @@ for scene in scene_list:
     elif code == 3:
       ax.set_xlim(-100, 600)
       ax.set_ylim(-100, 500)
+    elif code == 4:
+      ax.set_xlim(-100, 600)
+      ax.set_ylim(-150, 850)
+    elif code == 5:
+      ax.set_xlim(-200, 850)
+      ax.set_ylim(-450, 850)
 
   ax.set_aspect('equal', adjustable='box')
   for group in scene.groups.values():
