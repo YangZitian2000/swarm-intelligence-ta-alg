@@ -9,8 +9,10 @@ import os
 class Scene:
   def __init__(self, scene_code: str):
     self.scene_code = scene_code
-    # 创建组, 除坐标外其余均确定
-    self.groups = Factory.generate_groups(scene_code=scene_code)
+    type = scene_code[0:2]
+    if type != "KD":
+      # 创建组, 除坐标外其余均确定
+      self.groups = Factory.generate_groups(scene_code=scene_code)
     # 创建Agent, 除坐标外其余均确定
     self.agents = Factory.generate_agents(scene_code=scene_code)
     # 创建Task, 除坐标外其余均确定
@@ -24,9 +26,16 @@ class Scene:
           "id": agent.id,
           "type": agent.type,
           "rectangular coordinate": agent.rec_coor,
-          "polar coordinate": agent.polar_coor,
-          "group id": agent.group_id
+          "polar coordinate": agent.polar_coor
       }
+      if isinstance(agent, SD_Agent):
+        agent_info["group id"] = agent.group_id
+      elif isinstance(agent, KD_Agent):
+        agent_info["responsible angle"] = agent.res_angle
+      elif isinstance(agent, QD_Agent):
+        agent_info["group id"] = agent.group_id
+      else:
+        raise Exception("Invalid agent type!")
       self.json_data["agents"].append(agent_info)
 
     # 将Task信息添加到 JSON 数据中
@@ -43,9 +52,10 @@ class Scene:
         task_info["requirement"] = task.requirement
         task_info["profit"] = task.profit
       elif isinstance(task, AT_Task):
-        pass
+        task_info["speed"] = task.speed
+        task_info["direction"] = task.direction
       elif isinstance(task, SA_Task):
-        pass
+        task_info["side length"] = task.side_length
       else:
         raise Exception("Invalid task type!")
       self.json_data["tasks"].append(task_info)
@@ -59,18 +69,40 @@ class Factory:
   @staticmethod
   # 根据场景类型标识生成对应的编组列表(不包含坐标)
   def generate_groups(scene_code: str):
+    type = scene_code[0:2]
     code = int(scene_code[2:])
-    agent_per_group = agent_num_per_group_SD[code - 1]
-    group_num = len(agent_per_group)
     groups: dict[int, Group] = {}
-    agent_id: int = 1
-    for i in range(group_num):
-      group_id = i + 1
-      group = Group(id=group_id)
-      for _ in range(agent_per_group[i][0]):
-        group.agents.append(agent_id)
-        agent_id += 1
-      groups[group_id] = group
+    if type == "SD":
+      agent_per_group = agent_num_per_group_SD[code - 1]
+      group_num = len(agent_per_group)
+      agent_id: int = 1
+      for i in range(group_num):
+        group_id = i + 1
+        group = Group(id=group_id)
+        for _ in range(agent_per_group[i][0]):
+          group.agents.append(agent_id)
+          agent_id += 1
+        groups[group_id] = group
+    elif type == "KD":
+      pass
+    elif type == "QD":
+      group_num = group_num_QD[code - 1]
+      agent_num = agent_num_QD[code - 1]
+      agent_per_group = int(agent_num / group_num)
+      agent_id: int = 1
+      for group_id in range(1, group_num + 1):
+        group = Group(id=group_id)
+        for _ in range(agent_per_group):
+          group.agents.append(agent_id)
+          agent_id += 1
+        if code == 1:
+          group.radius = 20
+        elif code == 2 or code == 3:
+          group.radius = 30
+        elif code == 4:
+          group.radius = 50
+        groups[group_id] = group
+
     return groups
 
   @staticmethod
@@ -80,21 +112,49 @@ class Factory:
     code = int(scene_code[2:])
     if type == "SD":
       agent_per_group = agent_num_per_group_SD[code - 1]
-      agents: dict[int, Agent] = {}
+      agents: dict[int, SD_Agent] = {}
       agent_id: int = 1
       for i in range(len(agent_per_group)):
         for _ in range(agent_per_group[i][1]):
-          agent = Agent(id=agent_id, type="MSV", group_id=i + 1)
+          agent = SD_Agent(id=agent_id, type="MSV", group_id=i + 1)
           agents[agent_id] = agent
           agent_id += 1
         for _ in range(agent_per_group[i][0] - agent_per_group[i][1]):
-          agent = Agent(id=agent_id, type="USV", group_id=i + 1)
+          agent = SD_Agent(id=agent_id, type="USV", group_id=i + 1)
           agents[agent_id] = agent
           agent_id += 1
     elif type == "KD":
-      pass
+      agents: dict[int, KD_Agent] = {}
+      if code == 1 or code == 2:
+        for i in range(1, 8):
+          if i in [2, 3, 5, 6]:
+            agent = KD_Agent(id=i, type="D")
+          elif i in [4, 7]:
+            agent = KD_Agent(id=i, type="B")
+          else:
+            agent = KD_Agent(id=i, type="HM")
+          agents[i] = agent
+      else:
+        for i in range(1, 10):
+          if i in [3, 4, 6, 8]:
+            agent = KD_Agent(id=i, type="D")
+          elif i in [2, 5, 7, 9]:
+            agent = KD_Agent(id=i, type="B")
+          else:
+            agent = KD_Agent(id=i, type="HM")
+          agents[i] = agent
     elif type == "QD":
-      pass
+      agents: dict[int, QD_Agent] = {}
+      agent_num = agent_num_QD[code - 1]
+      group_num = group_num_QD[code - 1]
+      agent_num_per_group = int(agent_num / group_num)
+      for agent_id in range(1, agent_num + 1):
+        if random.choice([True, False]):
+          type = "UAV"
+        else:
+          type = "USV"
+        agent = QD_Agent(id=agent_id, type=type, group_id=(agent_id - 1) // agent_num_per_group + 1)
+        agents[agent_id] = agent
     else:
       raise Exception("Invalid scene type!")
     return agents
@@ -114,9 +174,22 @@ class Factory:
         tasks[task_id] = task
         task_id += 1
     elif type == "KD":
-      pass
+      tasks: dict[int, AT_Task] = {}
+      if code == 1 or code == 3:
+        task_num = 24
+      elif code == 2:
+        task_num = random.choice([5, 6, 7])
+      elif code == 4:
+        task_num = random.choice([11, 12, 13])
+      for task_id in range(1, task_num + 1):
+        task = AT_Task(id=task_id, type="AT")
+        tasks[task_id] = task
     elif type == "QD":
-      pass
+      tasks: dict[int, SA_Task] = {}
+      task_num = task_num_QD[code - 1]
+      for task_id in range(1, task_num + 1):
+        task = SA_Task(id=task_id, type="SA")
+        tasks[task_id] = task
     else:
       raise Exception("Invalid scene type!")
     return tasks
@@ -454,13 +527,210 @@ class SD(Scene):
 # 打击AT场景
 class KD(Scene):
   def __init__(self, scene_code):
+    code = int(scene_code[2:])
+    if code > 4 or code < 1:
+      raise Exception("Invalid KD scene code!")
     super().__init__(scene_code)
+    # 确定Agent坐标
+    self.generate_agent_coordinate_KD()
+    # 确定任务坐标
+    self.generate_task_coordinate_KD()
+
+  def generate_agent_coordinate_KD(self):
+    code = int(self.scene_code[2:])
+    if code == 1:
+      r, a = random.uniform(10 / math.sqrt(2), 11 / math.sqrt(2)), random.uniform(285, 345)
+      for a_id in range(2, 6):
+        self.agents[a_id].polar_coor = (r, a)
+        self.agents[a_id].rec_coor = polar_to_rec((r, a))
+        self.agents[a_id].res_angle = [rotate(a, -75), rotate(a, 75)]
+        a = rotate(a, 90)
+      self.agents[6].rec_coor = (70, 12)
+      self.agents[7].rec_coor = (70, -12)
+      self.agents[6].polar_coor = rec_to_polar((70, 12))
+      self.agents[7].polar_coor = rec_to_polar((70, -12))
+      self.agents[6].res_angle = self.agents[7].res_angle = [0, 180]
+    elif code == 3:
+      r, a = random.uniform(10, 11), random.uniform(310, 350)
+      for a_id in range(2, 8):
+        self.agents[a_id].polar_coor = (r, a)
+        self.agents[a_id].rec_coor = polar_to_rec((r, a))
+        self.agents[a_id].res_angle = [rotate(a, -85), rotate(a, 85)]
+        a = rotate(a, 60)
+      self.agents[8].rec_coor = (70, 12)
+      self.agents[9].rec_coor = (70, -12)
+      self.agents[8].polar_coor = rec_to_polar((70, 12))
+      self.agents[9].polar_coor = rec_to_polar((70, -12))
+      self.agents[8].res_angle = self.agents[9].res_angle = [0, 180]
+
+  def generate_task_coordinate_KD(self):
+    code = int(self.scene_code[2:])
+    if code == 1 or code == 2:
+      x, y = (98, 1.25)
+      task_rec_coors = []
+      for i in range(4):
+        for j in range(6):
+          task_rec_coors.append((x + i * 0.3, y - j * 0.5))
+      task_num = len(self.tasks)
+      task_rec_coors = random.sample(task_rec_coors, task_num)
+      if code == 2:
+        task_rec_coors = [(coor[0] - 70, coor[1]) for coor in task_rec_coors]
+      for t_id in range(1, task_num + 1):
+        self.tasks[t_id].rec_coor = task_rec_coors[t_id - 1]
+        self.tasks[t_id].polar_coor = rec_to_polar(task_rec_coors[t_id - 1])
+        self.tasks[t_id].direction = 270
+    elif code == 3 or code == 4:
+      x1, y1 = (-98, 0.25)
+      x2, y2 = (98, 0.75)
+      left_tasks = []
+      right_tasks = []
+      for i in range(4):
+        for j in range(2):
+          left_tasks.append((x1 - i * 0.3, y1 - j * 0.5))
+      for i in range(4):
+        for j in range(4):
+          right_tasks.append((x2 + i * 0.3, y2 - j * 0.5))
+      task_num = len(self.tasks)
+      right_tasks = random.sample(right_tasks, task_num - 8)
+      if code == 4:
+        left_tasks = [(coor[0] + 70, coor[1]) for coor in left_tasks]
+        right_tasks = [(coor[0] - 70, coor[1]) for coor in right_tasks]
+      for t_id in range(1, task_num + 1):
+        if t_id <= 8:
+          self.tasks[t_id].rec_coor = left_tasks[t_id - 1]
+          self.tasks[t_id].direction = 90
+        else:
+          self.tasks[t_id].rec_coor = right_tasks[t_id - 9]
+          self.tasks[t_id].direction = 270
+        self.tasks[t_id].polar_coor = rec_to_polar(self.tasks[t_id].rec_coor)
 
 
 # 区域搜索场景
 class QD(Scene):
   def __init__(self, scene_code):
+    code = int(scene_code[2:])
+    if code > 4 or code < 1:
+      raise Exception("Invalid QD scene code!")
     super().__init__(scene_code)
+    # 确定组的坐标
+    self.generate_group_coordinate_QD()
+    # 确定Agent坐标
+    self.generate_agent_coordinate_QD()
+    # 确定任务坐标
+    self.generate_task_coordinate_QD()
+
+  def generate_group_coordinate_QD(self):
+    code = int(self.scene_code[2:])
+    group_num = group_num_QD[code - 1]
+    group_coors = [(0, 0)]
+    if code == 1:
+      g_dis = 50
+    elif code == 2 or code == 3:
+      g_dis = 70
+    elif code == 4:
+      g_dis = 110
+    while len(group_coors) < group_num:
+      if code == 1:
+        x, y = random.uniform(-50, 50), random.uniform(-100, 100)
+      elif code == 2:
+        x, y = random.uniform(-100, 100), random.uniform(-200, 200)
+      elif code == 3:
+        x, y = random.uniform(-100, 100), random.uniform(-200, 200)
+      elif code == 4:
+        x, y = random.uniform(-150, 150), random.uniform(-300, 300)
+      valid = True
+      for coor in group_coors:
+        if rec_distance((x, y), coor) < g_dis:
+          valid = False
+          break
+      if valid:
+        group_coors.append((x, y))
+    for i, coor in enumerate(group_coors):
+      if i == 0:
+        continue
+      self.groups[i + 1].rec_coor = coor
+      self.groups[i + 1].polar_coor = rec_to_polar(coor)
+
+  def generate_task_coordinate_QD(self):
+    code = int(self.scene_code[2:])
+    task_num = task_num_QD[code - 1]
+    for task_id in range(1, task_num + 1):
+      side_length = random.choice([80, 100, 100, 150])
+      while True:
+        if code == 1:
+          x, y = random.uniform(-200, 200), random.uniform(-200, 200)
+        elif code == 2:
+          x, y = random.uniform(-300, 300), random.uniform(-300, 300)
+        elif code == 3:
+          x, y = random.uniform(-400, 400), random.uniform(-400, 400)
+        elif code == 4:
+          x, y = random.uniform(-500, 500), random.uniform(-500, 500)
+        task_cover_agent = False
+        for a_id in self.agents:
+          if self.task_cover_agent(task_coor=(x, y), side_length=side_length, agent_id=a_id):
+            task_cover_agent = True
+            break
+        task_cover_task = False
+        for t_id in range(1, task_id):
+          if self.task_cover_task(task_coor=(x, y), side_length=side_length, task_id=t_id):
+            task_cover_task = True
+            break
+        if not task_cover_agent and not task_cover_task:
+          self.tasks[task_id].side_length = side_length
+          self.tasks[task_id].rec_coor = (x, y)
+          self.tasks[task_id].polar_coor = rec_to_polar((x, y))
+          break
+
+  def generate_agent_coordinate_QD(self):
+    code = int(self.scene_code[2:])
+    if code == 1:
+      a_dis = 5
+    elif code == 2 or code == 3:
+      a_dis = 8
+    elif code == 4:
+      a_dis = 10
+    for group in self.groups.values():
+      agent_num_in_group = len(group.agents)
+      agent_polar_coors = []
+      if group.id == 1:  # 如果是第一组，则包含指挥舰位于原点
+        agent_polar_coors.append((0, 0))
+      while len(agent_polar_coors) < agent_num_in_group:  # 在编组半径范围内随机生成坐标，保证所有坐标之间距离大于5
+        r = random.uniform(0, group.radius)
+        a = random.uniform(0, 360)
+        valid = True
+        for cur_agent_polar_coor in agent_polar_coors:
+          if polar_distance((r, a), cur_agent_polar_coor) < a_dis:
+            valid = False
+        if valid:
+          agent_polar_coors.append((r, a))
+      for i, agent_id in enumerate(group.agents):  # 将可行的一组坐标作为该编组中Agent的坐标
+        if agent_id == 1:
+          continue
+        r, a = agent_polar_coors[i]
+        x, y = polar_to_rec((r, a))
+        self.agents[agent_id].rec_coor = (group.rec_coor[0] + x, group.rec_coor[1] + y)
+        self.agents[agent_id].polar_coor = rec_to_polar(self.agents[agent_id].rec_coor)
+
+  def task_cover_agent(self, task_coor, side_length, agent_id):
+    agent: QD_Agent = self.agents[agent_id]
+    x_l, x_r = task_coor[0] - side_length / 2, task_coor[0] + side_length / 2
+    y_d, y_u = task_coor[1] - side_length / 2, task_coor[1] + side_length / 2
+    if x_l <= agent.rec_coor[0] and agent.rec_coor[0] <= x_r and y_d <= agent.rec_coor[1] and agent.rec_coor[1] <= y_u:
+      return True
+    else:
+      return False
+
+  def task_cover_task(self, task_coor, side_length, task_id):
+    x_l_1, x_r_1 = task_coor[0] - side_length / 2, task_coor[0] + side_length / 2
+    x_l_2, x_r_2 = self.tasks[task_id].rec_coor[0] - self.tasks[task_id].side_length / \
+        2, self.tasks[task_id].rec_coor[0] + self.tasks[task_id].side_length / 2
+    y_d_1, y_u_1 = task_coor[1] - side_length / 2, task_coor[1] + side_length / 2
+    y_d_2, y_u_2 = self.tasks[task_id].rec_coor[1] - self.tasks[task_id].side_length / \
+        2, self.tasks[task_id].rec_coor[1] + self.tasks[task_id].side_length / 2
+    if x_r_1 < x_l_2 or x_l_1 > x_r_2 or y_u_1 < y_d_2 or y_d_1 > y_u_2:
+      return False
+    else:
+      return True
 
 
 # 极坐标相加
