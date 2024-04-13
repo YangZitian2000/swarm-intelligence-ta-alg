@@ -30,6 +30,7 @@ class Scene:
       }
       if isinstance(agent, SD_Agent):
         agent_info["group id"] = agent.group_id
+        agent_info["resource"] = agent.resource
       elif isinstance(agent, KD_Agent):
         agent_info["responsible angle"] = agent.res_angle
       elif isinstance(agent, QD_Agent):
@@ -123,6 +124,22 @@ class Factory:
           agent = SD_Agent(id=agent_id, type="USV", group_id=i + 1)
           agents[agent_id] = agent
           agent_id += 1
+      agent_num = sum(x[0] for x in agent_num_per_group_SD[code - 1])
+      SD1_resource = [12, 6, 4, 8, 4, 4, 10]
+      SD2_resource = [16, 8, 8, 8, 4, 14, 6, 6]
+      SD3_resource = [30, 10, 20, 20, 10, 10, 10, 6, 6, 6, 10, 6]
+      if code == 1:
+        resources = SD1_resource
+      elif code == 2:
+        resources = SD2_resource
+      elif code == 3:
+        resources = SD3_resource
+      elif code == 4:
+        resources = SD3_resource + SD2_resource * 2 + [10] * 2
+      elif code == 5:
+        resources = SD3_resource + SD2_resource * 4 + [10] * 6
+      for a_id in range(1, agent_num + 1):
+        agents[a_id].resource = resources[a_id - 1]
     elif type == "KD":
       agents: dict[int, KD_Agent] = {}
       if code == 1 or code == 2:
@@ -308,7 +325,7 @@ class SD(Scene):
       task_vir_polar_coor = (random.uniform(315, 325), random.uniform(40, 50))  # 创造一个虚拟的任务位置，以此作为生成编组的依据
       task_vir_rec_coor = polar_to_rec(task_vir_polar_coor)
       group_coor_list.append((task_vir_polar_coor[0], task_vir_polar_coor[1] + 180))  # 编组1的位置已有
-      while len(group_coor_list) < 8:  # 再生成5个编组坐标, 满足相互距离大于200,前3个用于SD3的编组位置，后2个用于SD2的中心编组位置
+      while len(group_coor_list) < 8:  # 再生成7个编组坐标, 满足相互距离大于200,前3个用于SD3的编组位置，后4个用于SD2的中心编组位置
         r, a = random.uniform(310, 330), random.uniform(0, 360)
         valid = True
         for cur_coor in group_coor_list:

@@ -55,6 +55,7 @@ class SD_Agent(Agent):
   def __init__(self, id, type, group_id):
     super().__init__(id, type)
     self.group_id = group_id
+    self.resource = 0
 
 
 # 无人艇

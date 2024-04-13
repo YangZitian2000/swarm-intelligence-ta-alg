@@ -54,7 +54,7 @@ for scene in scene_list:
 
 # 绘图
 for scene in scene_list:
-  fig, ax = plt.subplots(figsize=(12, 6))
+  fig, ax = plt.subplots(figsize=(24, 18))
   code = int(scene.scene_code[2:])
   if isinstance(scene, SD):
     if code == 1:
@@ -75,12 +75,22 @@ for scene in scene_list:
     for group in scene.groups.values():
       circle = plt.Circle(group.rec_coor, group.radius, linestyle='dashed', edgecolor='black', facecolor='none')
       ax.add_artist(circle)
-    ax.scatter([agent.rec_coor[0] for agent in scene.agents.values() if agent.type == "MSV"],
-               [agent.rec_coor[1] for agent in scene.agents.values() if agent.type == "MSV"], color="r", label="MSV", marker="*")  # 有人艇
-    ax.scatter([agent.rec_coor[0] for agent in scene.agents.values() if agent.type == "USV"],
-               [agent.rec_coor[1] for agent in scene.agents.values() if agent.type == "USV"], color="r", label="USV", marker=".")  # 无人艇
-    ax.scatter([task.rec_coor[0] for task in scene.tasks.values() if task.type == "ST"],
-               [task.rec_coor[1] for task in scene.tasks.values() if task.type == "ST"], color="b", label="ST", marker="<")  # ST任务
+    msv = [agent for agent in scene.agents.values() if agent.type == "MSV"]
+    msv_x = [agent.rec_coor[0] for agent in msv]
+    msv_y = [agent.rec_coor[1] for agent in msv]
+    ax.scatter(msv_x, msv_y, color="r", label="MSV", marker="*")  # 有人艇
+    usv = [agent for agent in scene.agents.values() if agent.type == "USV"]
+    usv_x = [agent.rec_coor[0] for agent in usv]
+    usv_y = [agent.rec_coor[1] for agent in usv]
+    ax.scatter(usv_x, usv_y, color="r", label="USV", marker=".")  # 无人艇
+    st = [task for task in scene.tasks.values() if task.type == "ST"]
+    st_x = [task.rec_coor[0] for task in st]
+    st_y = [task.rec_coor[1] for task in st]
+    ax.scatter(st_x, st_y, color="b", label="ST", marker="<")  # ST任务
+    for agent in scene.agents.values():
+      ax.text(agent.rec_coor[0] + 2, agent.rec_coor[1] + 4, agent.id, ha='center', va='center', fontsize=8)
+    for task in scene.tasks.values():
+      ax.text(task.rec_coor[0] + 2, task.rec_coor[1] + 4, task.id, ha='center', va='center', fontsize=8)
   elif isinstance(scene, KD):
     if code == 1:
       ax.set_xlim(-20, 120)
@@ -102,6 +112,10 @@ for scene in scene_list:
                [agent.rec_coor[1] for agent in scene.agents.values() if agent.type == "B"], color="green", label="B", marker="d")  # B
     ax.scatter([task.rec_coor[0] for task in scene.tasks.values() if task.type == "AT"],
                [task.rec_coor[1] for task in scene.tasks.values() if task.type == "AT"], color="b", label="AT", marker="^")  # AT任务
+    for agent in scene.agents.values():
+      ax.text(agent.rec_coor[0] + 1, agent.rec_coor[1] + 2, agent.id, ha='center', va='center', fontsize=8)
+    for task in scene.tasks.values():
+      ax.text(task.rec_coor[0] + 0.1, task.rec_coor[1] + 0.2, task.id, ha='center', va='center', fontsize=8)
   elif isinstance(scene, QD):
     if code == 1:
       ax.set_xlim(-250, 250)
@@ -140,7 +154,10 @@ for scene in scene_list:
       ax.add_artist(square)
     ax.scatter([task.rec_coor[0] for task in scene.tasks.values() if task.type == "SA"],
                [task.rec_coor[1] for task in scene.tasks.values() if task.type == "SA"], color="b", label="SA", marker="x")  # SA任务
-
+    for agent in scene.agents.values():
+      ax.text(agent.rec_coor[0] + 2, agent.rec_coor[1] + 4, agent.id, ha='center', va='center', fontsize=8)
+    for task in scene.tasks.values():
+      ax.text(task.rec_coor[0] + 5, task.rec_coor[1] + 10, task.id, ha='center', va='center', fontsize=8)
   ax.set_aspect('equal', adjustable='box')
   ax.legend()
   ax.set_title(scene.scene_code)
@@ -159,5 +176,5 @@ for scene in scene_list:
 
   plt.xlabel('X')
   plt.ylabel('Y')
-  # plt.grid(True)
+  plt.savefig(os.path.dirname(os.path.abspath(__file__)) + '\\\\' + scene.scene_code + '.png', dpi=200)
   plt.show()
